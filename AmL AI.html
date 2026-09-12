@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kernel — your AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#10141A;
+    --surface:#171D26;
+    --surface-raised:#1E2530;
+    --text:#E7E4DA;
+    --text-dim:#8B93A1;
+    --accent:#E8A33D;
+    --accent-dim:#8A6A32;
+    --signal:#5FB4AE;
+    --border:#262E3A;
+    --danger:#D9694F;
+    --radius:6px;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    display:flex;
+    overflow:hidden;
+  }
+  /* ---------- Rail ---------- */
+  #rail{
+    width:280px;
+    min-width:280px;
+    background:var(--surface);
+    border-right:1px solid var(--border);
+    display:flex;
+    flex-direction:column;
+    padding:22px 18px;
+    height:100vh;
+    overflow-y:auto;
+  }
+  #brand{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:22px;
+    letter-spacing:-0.02em;
+    color:var(--text);
+    display:flex;
+    align-items:baseline;
+    gap:8px;
+  }
+  #brand .dot{color:var(--accent);}
+  #tagline{
+    color:var(--text-dim);
+    font-size:13px;
+    margin-top:4px;
+    line-height:1.5;
+  }
+  .field{margin-top:22px;}
+  .field label{
+    display:block;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--text-dim);
+    margin-bottom:6px;
+  }
+  .field input, .field select{
+    width:100%;
+    background:var(--bg);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:9px 10px;
+    border-radius:var(--radius);
+    font-family:'Inter',sans-serif;
+    font-size:13.5px;
+    outline:none;
+  }
+  .field input:focus, .field select:focus{border-color:var(--accent-dim);}
+  .field .hint{
+    font-size:11.5px;
+    color:var(--text-dim);
+    margin-top:6px;
+    line-height:1.5;
+  }
+  .field .hint a{color:var(--signal); text-decoration:none;}
+  .field .hint a:hover{text-decoration:underline;}
+  #persona{
+    width:100%;
+    background:var(--bg);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:9px 10px;
+    border-radius:var(--radius);
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    resize:vertical;
+    min-height:64px;
+    outline:none;
+  }
+  #status{
+    margin-top:18px;
+    display:flex;
+    align-items:center;
+    gap:7px;
+    font-size:12.5px;
+    color:var(--text-dim);
+  }
+  #status .led{
+    width:7px;height:7px;border-radius:50%;
+    background:var(--text-dim);
+    flex-shrink:0;
+  }
+  #status.ok .led{background:var(--signal); box-shadow:0 0 6px var(--signal);}
+  #status.err .led{background:var(--danger); box-shadow:0 0 6px var(--danger);}
+  #rail-footer{
+    margin-top:auto;
+    padding-top:18px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  button.ghost{
+    background:transparent;
+    border:1px solid var(--border);
+    color:var(--text-dim);
+    padding:8px 10px;
+    border-radius:var(--radius);
+    font-size:12.5px;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+  }
+  button.ghost:hover{border-color:var(--accent-dim); color:var(--text);}
+  /* ---------- Chat ---------- */
+  #chat-wrap{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    height:100vh;
+  }
+  #log{
+    flex:1;
+    overflow-y:auto;
+    padding:36px 0 18px;
+  }
+  #log-inner{
+    max-width:720px;
+    margin:0 auto;
+    padding:0 28px;
+  }
+  .msg{margin-bottom:26px;}
+  .msg .who{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--text-dim);
+    margin-bottom:6px;
+  }
+  .msg.user .who{color:var(--signal);}
+  .msg.user .who::before{content:"you@kernel:~$ ";}
+  .msg.assistant .who{color:var(--accent);}
+  .msg.assistant .who::before{content:"kernel$ ";}
+  .msg .body{
+    font-size:14.5px;
+    line-height:1.65;
+    white-space:pre-wrap;
+    word-wrap:break-word;
+  }
+  .msg.assistant .body{
+    border-left:2px solid var(--border);
+    padding-left:14px;
+  }
+  .msg.error .body{color:var(--danger); border-left-color:var(--danger);}
+  .body code{
+    font-family:'JetBrains Mono',monospace;
+    background:var(--surface-raised);
+    padding:1px 5px;
+    border-radius:4px;
+    font-size:0.9em;
+  }
+  .body pre{
+    background:var(--surface-raised);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:12px 14px;
+    overflow-x:auto;
+    margin:10px 0;
+  }
+  .body pre code{background:none; padding:0; font-size:13px; line-height:1.55;}
+  #empty{
+    max-width:560px;
+    margin:14vh auto 0;
+    text-align:center;
+    padding:0 28px;
+  }
+  #empty h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:26px;
+    font-weight:600;
+    color:var(--text);
+    margin:0 0 10px;
+  }
+  #empty p{color:var(--text-dim); font-size:14px; line-height:1.6;}
+  #empty .suggestions{
+    margin-top:22px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .suggestion{
+    text-align:left;
+    background:var(--surface);
+    border:1px solid var(--border);
+    color:var(--text-dim);
+    padding:10px 14px;
+    border-radius:var(--radius);
+    font-size:13px;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+  }
+  .suggestion:hover{border-color:var(--accent-dim); color:var(--text);}
+  /* ---------- Composer ---------- */
+  #composer{
+    border-top:1px solid var(--border);
+    padding:16px 28px 20px;
+  }
+  #composer-inner{
+    max-width:720px;
+    margin:0 auto;
+    display:flex;
+    gap:10px;
+    align-items:flex-end;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:10px 10px 10px 16px;
+  }
+  #composer-inner:focus-within{border-color:var(--accent-dim);}
+  #input{
+    flex:1;
+    background:none;
+    border:none;
+    outline:none;
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    font-size:14.5px;
+    resize:none;
+    max-height:160px;
+    line-height:1.5;
+    padding:4px 0;
+  }
+  #send{
+    background:var(--accent);
+    border:none;
+    color:#1A1305;
+    font-weight:600;
+    font-size:13px;
+    padding:9px 16px;
+    border-radius:calc(var(--radius) - 1px);
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  #send:disabled{background:var(--accent-dim); cursor:not-allowed;}
+  #composer-hint{
+    max-width:720px;
+    margin:8px auto 0;
+    font-size:11px;
+    color:var(--text-dim);
+    text-align:center;
+  }
+  ::-webkit-scrollbar{width:9px;}
+  ::-webkit-scrollbar-thumb{background:var(--border); border-radius:8px;}
+  @media (max-width:760px){
+    body{flex-direction:column;}
+    #rail{width:100%; min-width:0; height:auto; max-height:44vh; border-right:none; border-bottom:1px solid var(--border);}
+    #chat-wrap{height:auto; flex:1;}
+  }
+</style>
+</head>
+<body>
+
+<div id="rail">
+  <div id="brand"><span>Kernel</span><span class="dot">_</span></div>
+  <div id="tagline">Your own AI. Coding, building, casual chat — no subscriptions.</div>
+
+  <div class="field">
+    <label for="apiKey">OpenRouter API key</label>
+    <input id="apiKey" type="password" placeholder="sk-or-v1-...">
+    <div class="hint">Free — get one at <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a>. Stays in this browser tab only.</div>
+  </div>
+
+  <div class="field">
+    <label for="model">Model</label>
+    <select id="model">
+      <option value="openrouter/free">Auto (best free model)</option>
+      <option value="qwen/qwen3-coder:free">Qwen3 Coder — best for code</option>
+      <option value="deepseek/deepseek-r1:free">DeepSeek R1 — reasoning</option>
+      <option value="meta-llama/llama-3.3-70b-instruct:free">Llama 3.3 70B — general</option>
+      <option value="google/gemma-3-27b-it:free">Gemma 3 27B — fast & light</option>
+    </select>
+    <div class="hint">Free-tier models — a couple of requests per minute, no card needed.</div>
+  </div>
+
+  <div class="field">
+    <label for="persona">Personality (optional)</label>
+    <textarea id="persona" placeholder="e.g. Be direct, explain code line by line, casual tone with friends.">You are Kernel, a helpful personal AI for a small group of friends who are into coding, building projects, and cybersecurity. Be clear and direct, give working code, explain briefly, and keep a friendly, casual tone.</textarea>
+  </div>
+
+  <div id="status"><span class="led"></span><span id="status-text">not connected</span></div>
+
+  <div id="rail-footer">
+    <button class="ghost" id="clear-btn">Clear conversation</button>
+  </div>
+</div>
+
+<div id="chat-wrap">
+  <div id="log">
+    <div id="log-inner">
+      <div id="empty">
+        <h1>What are we building today?</h1>
+        <p>Paste your free OpenRouter key on the left to get started. Everyone in your group uses their own key — nothing is shared or stored on a server.</p>
+        <div class="suggestions">
+          <button class="suggestion" data-fill="Help me debug this Python script — I'll paste the error.">Help me debug this Python script — I'll paste the error.</button>
+          <button class="suggestion" data-fill="Explain how a reverse shell works, for a CTF I'm building.">Explain how a reverse shell works, for a CTF I'm building.</button>
+          <button class="suggestion" data-fill="Give me a quick project idea I can build this weekend.">Give me a quick project idea I can build this weekend.</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="composer">
+    <div id="composer-inner">
+      <textarea id="input" rows="1" placeholder="Message Kernel..."></textarea>
+      <button id="send">Send</button>
+    </div>
+    <div id="composer-hint">Enter to send · Shift+Enter for a new line</div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const apiKeyEl = $('apiKey'), modelEl = $('model'), personaEl = $('persona');
+const logInner = $('log-inner'), emptyEl = $('empty'), input = $('input'), sendBtn = $('send');
+const statusEl = $('status'), statusText = $('status-text');
+
+let history = [];
+let sending = false;
+
+function setStatus(state, text){
+  statusEl.className = state;
+  statusText.textContent = text;
+}
+apiKeyEl.addEventListener('input', () => {
+  setStatus(apiKeyEl.value.trim() ? 'ok' : '', apiKeyEl.value.trim() ? 'key set' : 'not connected');
+});
+
+$('clear-btn').addEventListener('click', () => {
+  history = [];
+  logInner.innerHTML = '';
+  logInner.appendChild(emptyEl);
+});
+
+document.querySelectorAll('.suggestion').forEach(btn => {
+  btn.addEventListener('click', () => { input.value = btn.dataset.fill; input.focus(); autoGrow(); });
+});
+
+function autoGrow(){
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 160) + 'px';
+}
+input.addEventListener('input', autoGrow);
+input.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey){
+    e.preventDefault();
+    send();
+  }
+});
+sendBtn.addEventListener('click', send);
+
+// Minimal, dependency-free markdown: fenced code blocks, inline code, bold
+function renderMarkdown(text){
+  const escape = (s) => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  let parts = text.split(/```/g);
+  let out = '';
+  parts.forEach((part, i) => {
+    if (i % 2 === 1){
+      let lines = part.split('\n');
+      if (lines[0] && !lines[0].includes(' ')) lines.shift();
+      out += '<pre><code>' + escape(lines.join('\n')) + '</code></pre>';
+    } else {
+      let seg = escape(part)
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+      out += seg;
+    }
+  });
+  return out;
+}
+
+function addMessage(role, text){
+  if (emptyEl.parentNode) emptyEl.remove();
+  const wrap = document.createElement('div');
+  wrap.className = 'msg ' + role;
+  const who = document.createElement('div');
+  who.className = 'who';
+  const body = document.createElement('div');
+  body.className = 'body';
+  body.innerHTML = renderMarkdown(text);
+  wrap.appendChild(who);
+  wrap.appendChild(body);
+  logInner.appendChild(wrap);
+  $('log').scrollTop = $('log').scrollHeight;
+  return body;
+}
+
+async function send(){
+  if (sending) return;
+  const text = input.value.trim();
+  if (!text) return;
+  const key = apiKeyEl.value.trim();
+  if (!key){
+    setStatus('err', 'add your API key first');
+    apiKeyEl.focus();
+    return;
+  }
+
+  addMessage('user', text);
+  history.push({role:'user', content:text});
+  input.value = '';
+  autoGrow();
+
+  const assistantBody = addMessage('assistant', '');
+  sending = true;
+  sendBtn.disabled = true;
+  setStatus('ok', 'thinking...');
+
+  try{
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + key,
+        'HTTP-Referer': location.href,
+        'X-Title': 'Kernel'
+      },
+      body: JSON.stringify({
+        model: modelEl.value,
+        messages: [{role:'system', content: personaEl.value.trim()}, ...history],
+        stream: true
+      })
+    });
+
+    if (!res.ok || !res.body){
+      const errText = await res.text().catch(() => '');
+      throw new Error('HTTP ' + res.status + ' — ' + errText.slice(0,200));
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '', full = '';
+
+    while (true){
+      const {done, value} = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, {stream:true});
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines){
+        const trimmed = line.trim();
+        if (!trimmed.startsWith('data:')) continue;
+        const data = trimmed.slice(5).trim();
+        if (data === '[DONE]') continue;
+        try{
+          const json = JSON.parse(data);
+          const delta = json.choices?.[0]?.delta?.content;
+          if (delta){
+            full += delta;
+            assistantBody.innerHTML = renderMarkdown(full);
+            $('log').scrollTop = $('log').scrollHeight;
+          }
+        } catch(e){ /* ignore partial chunk */ }
+      }
+    }
+
+    history.push({role:'assistant', content: full});
+    setStatus('ok', 'key set');
+  } catch(err){
+    assistantBody.parentElement.classList.add('error');
+    assistantBody.innerHTML = 'Couldn\'t reach the model — ' + err.message + '<br><br>Check that your API key is correct and that you have free requests left, then try again.';
+    setStatus('err', 'error — see message');
+  } finally {
+    sending = false;
+    sendBtn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
